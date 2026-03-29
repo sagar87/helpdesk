@@ -13,7 +13,16 @@
       "Bash(bunx @better-auth/cli generate --config src/lib/auth.ts)",
       "Bash(bunx tsc:*)",
       "Bash(curl -s -X POST http://localhost:3000/api/auth/sign-in/email -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"123456\"\"\"\"}' -c /tmp/admin-cookies.txt)",
-      "Bash(export PATH=\"/Users/sagar/.bun/bin:$PATH\")"
+      "Bash(export PATH=\"/Users/sagar/.bun/bin:$PATH\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/sign-in/email -H \"Content-Type: application/json\" -H \"Origin: http://localhost:5174\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"123456\"\"\"\"}' -i)",
+      "Bash(export PATH=/Users/sagar/.bun/bin:$PATH)",
+      "Bash(grep -r from.*zod node_modules/@hookform/resolvers/zod/)",
+      "Bash(curl -s -X OPTIONS http://localhost:5173/api/auth/sign-in/email -H \"Origin: http://localhost:5173\" -H \"Access-Control-Request-Method: POST\" -H \"Access-Control-Request-Headers: content-type\" -i)",
+      "Bash(pkill -f \"bun\")",
+      "Bash(lsof -ti:5173)",
+      "Bash(xargs kill:*)",
+      "Bash(lsof -ti:5174)",
+      "Bash(lsof -ti:3000)"
     ]
   }
 }

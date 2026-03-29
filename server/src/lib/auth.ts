@@ -11,7 +11,7 @@ export const auth = betterAuth({
     minPasswordLength: 6,
   },
   disabledPaths: ["/sign-up/email"],
-  trustedOrigins: process.env.TRUSTED_ORIGINS?.split(",") ?? [],
+  trustedOrigins: process.env.TRUSTED_ORIGINS?.split(",").filter(Boolean) ?? ["http://localhost:5173"],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
   },
