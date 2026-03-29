@@ -8,14 +8,16 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 6,
   },
+  disabledPaths: ["/sign-up/email"],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
   },
   user: {
     additionalFields: {
       role: {
-        type: "string",
+        type: ["ADMIN", "AGENT"],
         required: false,
         defaultValue: "AGENT",
         input: false,
