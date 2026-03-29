@@ -5,7 +5,8 @@
       "Bash(bun add:*)",
       "Bash(bunx shadcn@latest init -d)",
       "Bash(bunx prisma:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(bun -e \":*)"
     ]
   }
 }
