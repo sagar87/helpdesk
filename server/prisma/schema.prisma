@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -28,7 +29,6 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String
-  password  String
   role      Role     @default(AGENT)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -36,6 +36,11 @@ model User {
 
   assignedTickets Ticket[]  @relation("AssignedAgent")
   sessions        Session[]
+  emailVerified   Boolean   @default(false)
+  image           String?
+  accounts        Account[]
+
+  @@map("user")
 }
 
 model Session {
@@ -44,23 +49,31 @@ model Session {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
 }
 
 model Ticket {
-  id          String         @id @default(uuid())
+  id          String          @id @default(uuid())
   subject     String
   body        String
   senderEmail String
   senderName  String
-  status      TicketStatus   @default(OPEN)
+  status      TicketStatus    @default(OPEN)
   category    TicketCategory?
   aiSummary   String?
   assignedTo  String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  agent    User?    @relation("AssignedAgent", fields: [assignedTo], references: [id])
+  agent    User?     @relation("AssignedAgent", fields: [assignedTo], references: [id])
   messages Message[]
 }
 
@@ -73,4 +86,36 @@ model Message {
   createdAt DateTime @default(now())
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
