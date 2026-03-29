@@ -12,7 +12,8 @@
       "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")",
       "Bash(bunx @better-auth/cli generate --config src/lib/auth.ts)",
       "Bash(bunx tsc:*)",
-      "Bash(curl -s -X POST http://localhost:3000/api/auth/sign-in/email -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"123456\"\"\"\"}' -c /tmp/admin-cookies.txt)"
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/sign-in/email -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"123456\"\"\"\"}' -c /tmp/admin-cookies.txt)",
+      "Bash(export PATH=\"/Users/sagar/.bun/bin:$PATH\")"
     ]
   }
 }
