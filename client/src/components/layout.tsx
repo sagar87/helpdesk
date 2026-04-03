@@ -22,12 +22,12 @@ export default function Layout() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
+            <NavLink to="/" className="flex items-center gap-2">
               <Headset className="size-5 text-slate-700" />
               <span className="text-base font-semibold tracking-tight text-slate-900">
                 Helpdesk
               </span>
-            </div>
+            </NavLink>
             {(session.user as { role?: string }).role === "ADMIN" && (
               <NavLink
                 to="/users"
