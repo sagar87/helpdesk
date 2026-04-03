@@ -56,15 +56,9 @@
 - **Min password length:** 12 characters
 
 ## E2E Testing
-- **Framework:** Playwright (Chromium only)
-- **Config:** `playwright.config.ts` at project root
-- **Tests:** `e2e/` directory
-- **Database:** Uses a separate `helpdesk_test` PostgreSQL database, created/dropped automatically
-- **Global setup** (`e2e/global-setup.ts`): creates test DB, runs Prisma migrations, seeds test admin (`admin@test.com` / `testpassword12`)
-- **Global teardown** (`e2e/global-teardown.ts`): drops the test DB
-- **Servers:** Playwright starts the Express server on port 3001 and Vite on port 5174 with test env vars
-- **Vite config:** Accepts `VITE_PORT` and `VITE_API_URL` env vars to override defaults for test isolation
-- **Env reference:** `server/.env.test` documents the test environment variables
+- **Framework:** Playwright — run with `bun run test:e2e`
+- **Agent:** Always use the `e2e-test-writer` agent to write or update e2e tests — it has the full testing infrastructure context (DB setup, ports, global setup/teardown, conventions)
+- After implementing a new page or user flow, proactively use the `e2e-test-writer` agent to add test coverage
 
 ## Conventions
 - Client proxies `/api` requests to the server via Vite config (`VITE_API_URL` overrides the target)
