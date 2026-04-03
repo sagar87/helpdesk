@@ -1,7 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { LogOut, Headset } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
 
 export default function Layout() {
   const { data: session, isPending } = authClient.useSession();
@@ -9,7 +8,7 @@ export default function Layout() {
   if (isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-sm text-slate-400">Loading...</p>
       </div>
     );
   }
@@ -19,34 +18,33 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            <Headset className="size-5 text-primary" />
-            <span className="text-lg font-semibold tracking-tight">
+            <Headset className="size-5 text-slate-700" />
+            <span className="text-base font-semibold tracking-tight text-slate-900">
               Helpdesk
             </span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
+              <div className="size-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold">
                 {session.user.name.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-slate-700">
                 {session.user.name}
               </span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon-sm"
+            <button
               onClick={async () => {
                 await authClient.signOut();
                 window.location.href = "/login";
               }}
+              className="flex items-center justify-center size-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
             >
               <LogOut className="size-4" />
-            </Button>
+            </button>
           </div>
         </div>
       </header>
