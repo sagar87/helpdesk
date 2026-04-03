@@ -31,7 +31,9 @@
       "Bash(curl -s http://localhost:3001/api/health)",
       "Bash(bunx playwright:*)",
       "Bash(bun -e \"import f from './e2e/global-teardown.ts'; await f\\(\\);\")",
-      "Bash(bunx shadcn@latest add table --yes)"
+      "Bash(bunx shadcn@latest add table --yes)",
+      "Bash(pkill -f \"bun.*index.ts\")",
+      "Bash(pkill -f \"bun.*vite\")"
     ]
   }
 }

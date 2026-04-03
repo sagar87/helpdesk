@@ -1,5 +1,6 @@
 import { Navigate, Outlet, NavLink } from "react-router-dom";
 import { LogOut, Headset } from "lucide-react";
+import { Role } from "core";
 import { authClient } from "@/lib/auth-client";
 
 export default function Layout() {
@@ -28,7 +29,7 @@ export default function Layout() {
                 Helpdesk
               </span>
             </NavLink>
-            {(session.user as { role?: string }).role === "ADMIN" && (
+            {(session.user as { role?: string }).role === Role.ADMIN && (
               <NavLink
                 to="/users"
                 className={({ isActive }) =>

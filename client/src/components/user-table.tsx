@@ -1,7 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { Role } from "core";
 import {
   Table,
   TableBody,
@@ -13,18 +14,20 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { EditUserDialog } from "@/components/edit-user-dialog";
+import { DeleteUserDialog } from "@/components/delete-user-dialog";
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "AGENT";
+  role: Role;
   active: boolean;
   createdAt: string;
 }
 
 export function UserTable() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const { data: users, isPending, error } = useQuery({
     queryKey: ["users"],
     queryFn: () => axios.get<User[]>("/api/users").then((res) => res.data),
@@ -40,7 +43,7 @@ export function UserTable() {
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead className="w-12" />
+            <TableHead className="w-24" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -77,7 +80,7 @@ export function UserTable() {
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead className="w-12" />
+            <TableHead className="w-24" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -105,20 +108,33 @@ export function UserTable() {
                 {new Date(user.createdAt).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Edit ${user.name}`}
-                  onClick={() => setEditingUser(user)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Edit ${user.name}`}
+                    onClick={() => setEditingUser(user)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  {user.role !== Role.ADMIN && user.active && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Delete ${user.name}`}
+                      onClick={() => setDeletingUser(user)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
       <EditUserDialog user={editingUser} onClose={() => setEditingUser(null)} />
+      <DeleteUserDialog user={deletingUser} onClose={() => setDeletingUser(null)} />
     </>
   );
 }

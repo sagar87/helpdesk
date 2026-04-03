@@ -143,4 +143,20 @@ describe("UsersPage", () => {
     expect(screen.getByRole("button", { name: "Edit Agent User" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit Inactive Agent" })).toBeInTheDocument();
   });
+
+  it("renders delete button only for active non-admin users", async () => {
+    mockedAxios.get.mockResolvedValue({ data: mockUsers });
+    renderWithQuery(<UsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Admin User")).toBeInTheDocument();
+    });
+
+    // Admin User (ADMIN) — no delete button
+    expect(screen.queryByRole("button", { name: "Delete Admin User" })).not.toBeInTheDocument();
+    // Agent User (AGENT, active) — has delete button
+    expect(screen.getByRole("button", { name: "Delete Agent User" })).toBeInTheDocument();
+    // Inactive Agent (AGENT, inactive) — no delete button
+    expect(screen.queryByRole("button", { name: "Delete Inactive Agent" })).not.toBeInTheDocument();
+  });
 });

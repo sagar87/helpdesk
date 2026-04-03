@@ -84,4 +84,23 @@ router.put("/:id", validate(updateUserSchema), async (req: Request<{ id: string 
   res.json(user);
 });
 
+router.delete("/:id", async (req: Request<{ id: string }>, res) => {
+  const { id } = req.params;
+
+  const user = await db.user.findUnique({ where: { id }, select: { id: true, role: true, active: true } });
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  if (user.role === Role.ADMIN) {
+    res.status(403).json({ error: "Admin users cannot be deleted" });
+    return;
+  }
+
+  await db.user.update({ where: { id }, data: { active: false } });
+
+  res.json({ success: true });
+});
+
 export default router;
