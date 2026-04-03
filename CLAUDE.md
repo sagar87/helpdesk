@@ -22,6 +22,23 @@
 ## Documentation
 - Always use context7 MCP tools (`resolve-library-id` then `query-docs`) to fetch up-to-date documentation for libraries before writing code. This includes Express, React, Prisma, Tailwind, shadcn/ui, and any other dependencies.
 
+## Authentication
+- **Library:** Better Auth v1 — server at `server/src/lib/auth.ts`, client at `client/src/lib/auth-client.ts`
+- **Adapter:** Prisma + PostgreSQL (User, Session, Account, Verification models)
+- **Method:** Email/password only; sign-up via `/sign-up/email` is **disabled** — agents are created by admins
+- **Session:** 7-day expiry, cookie-based (Better Auth handles storage automatically)
+- **Roles:** `role` field on User model — `ADMIN` or `AGENT` (default `AGENT`); `active` boolean field also on User
+- **Express:** Auth handler mounted at `/api/auth/*`; session retrieved via `auth.api.getSession()` from request headers
+- **Client usage:** `authClient.signIn.email()` to log in, `authClient.useSession()` hook to read session, `authClient.signOut()` to log out
+- **Protected routes:** Layout component checks `useSession()` and redirects to `/login` if no session
+- **Env vars:** `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (server origin), `TRUSTED_ORIGINS` (comma-separated allowed CORS origins)
+
+## UI
+- shadcn/ui style: `"default"` (Radix UI primitives) — run `bunx shadcn@latest add <component>` from `/client` to add components
+- Theme: shadcn default neutral, defined as CSS variables in `client/src/index.css` (light + dark via oklch, mapped to Tailwind v4 with `@theme inline`)
+- Always use theme tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, `text-destructive`, etc.) — never hardcode colors
+- Installed components: button, input, label, card
+
 ## Conventions
 - Client proxies `/api` requests to the server via Vite config
 - Prisma schema lives at `/server/prisma/schema.prisma`
