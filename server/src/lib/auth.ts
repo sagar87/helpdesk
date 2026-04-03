@@ -9,7 +9,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    minPasswordLength: 6,
+    minPasswordLength: 12,
   },
   disabledPaths: ["/sign-up/email"],
   trustedOrigins: process.env.TRUSTED_ORIGINS?.split(",").filter(Boolean) ?? ["http://localhost:5173"],
