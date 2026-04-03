@@ -1,0 +1,2 @@
+- [E2E test infrastructure](infra.md) — Playwright config, test DB, seeded users, webServer health check details
+- [UI patterns and locators](ui-patterns.md) — Logout button, Users link, login form, shadcn card title, auth redirect behavior

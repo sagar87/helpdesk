@@ -6,7 +6,8 @@
     "dev": "bun run --filter '*' dev",
     "dev:client": "bun run --filter client dev",
     "dev:server": "bun run --filter server dev",
-    "test:e2e": "bunx playwright test"
+    "test:e2e": "bun e2e/setup-db.ts && bunx playwright test",
+    "test:e2e:ui": "bun e2e/setup-db.ts && bunx playwright test --ui"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
