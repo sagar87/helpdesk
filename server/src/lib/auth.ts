@@ -22,7 +22,6 @@ export const auth = betterAuth({
         type: ["ADMIN", "AGENT"],
         required: false,
         defaultValue: "AGENT",
-        input: false,
       },
       active: {
         type: "boolean",

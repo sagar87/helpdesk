@@ -1,6 +1,7 @@
 # Helpdesk - AI-Powered Ticket Management System
 
 ## Project Structure
+- `/core` — Shared code (validation schemas, types) used by both client and server
 - `/client` — React + Vite + Tailwind CSS v4 + shadcn/ui
 - `/server` — Express.js + TypeScript + Prisma ORM + PostgreSQL
 
@@ -10,6 +11,8 @@
 - **Backend:** Express.js, TypeScript
 - **Database:** PostgreSQL with Prisma ORM
 - **Auth:** Database-backed sessions
+- **Validation:** Zod v4 — use for both client and server input validation (`import { z } from "zod/v4"`)
+- **Forms:** React Hook Form with `zodResolver` — use `useForm` + `register` for all forms, validate with Zod schemas via `@hookform/resolvers/zod`
 - **AI:** Claude API
 
 ## Commands
@@ -81,3 +84,5 @@
 - Prisma schema lives at `/server/prisma/schema.prisma`
 - shadcn/ui components are in `/client/src/components/ui/`
 - Use `@/` import alias in the client (maps to `/client/src/`)
+- Shared validation schemas and types live in `/core` — import via `"core"` (workspace package). Place schemas that are used by both client and server here to avoid duplication.
+- Do not wrap Express route handlers in try/catch — let errors propagate to the error handler

@@ -1,7 +1,7 @@
 {
   "name": "helpdesk",
   "private": true,
-  "workspaces": ["client", "server"],
+  "workspaces": ["core", "client", "server"],
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "dev:client": "bun run --filter client dev",

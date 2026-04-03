@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { db } from "./lib/db";
 import { auth } from "./lib/auth";
+import usersRouter from "./routes/users";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -67,20 +68,7 @@ app.get("/api/me", requireAuth, (req, res) => {
   res.json({ id, email, name, role, active, emailVerified, image, createdAt });
 });
 
-app.get("/api/users", requireAuth, requireAdmin, async (_req, res) => {
-  const users = await db.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      active: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  res.json(users);
-});
+app.use("/api/users", requireAuth, requireAdmin, usersRouter);
 
 app.get("/api/health", async (_req, res) => {
   try {
