@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, NavLink } from "react-router-dom";
 import { LogOut, Headset } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
@@ -21,11 +21,23 @@ export default function Layout() {
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
         <div className="flex h-14 items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <Headset className="size-5 text-slate-700" />
-            <span className="text-base font-semibold tracking-tight text-slate-900">
-              Helpdesk
-            </span>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Headset className="size-5 text-slate-700" />
+              <span className="text-base font-semibold tracking-tight text-slate-900">
+                Helpdesk
+              </span>
+            </div>
+            {(session.user as { role?: string }).role === "ADMIN" && (
+              <NavLink
+                to="/users"
+                className={({ isActive }) =>
+                  `text-sm font-medium transition ${isActive ? "text-slate-900" : "text-slate-500 hover:text-slate-900"}`
+                }
+              >
+                Users
+              </NavLink>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">

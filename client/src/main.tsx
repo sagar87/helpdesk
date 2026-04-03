@@ -3,8 +3,10 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import Layout from "@/components/layout";
+import AdminRoute from "@/components/admin-route";
 import HomePage from "@/pages/home";
 import LoginPage from "@/pages/login";
+import UsersPage from "@/pages/users";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +19,15 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <HomePage />,
+      },
+      {
+        element: <AdminRoute />,
+        children: [
+          {
+            path: "/users",
+            element: <UsersPage />,
+          },
+        ],
       },
     ],
   },

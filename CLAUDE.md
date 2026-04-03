@@ -33,6 +33,13 @@
 - **Protected routes:** Layout component checks `useSession()` and redirects to `/login` if no session
 - **Env vars:** `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (server origin), `TRUSTED_ORIGINS` (comma-separated allowed CORS origins)
 
+## Role-Based Access
+- Roles: `ADMIN` and `AGENT` (stored as `role` field on the User model, default `AGENT`)
+- **Client route guard:** Wrap admin-only routes with `<AdminRoute />` (`client/src/components/admin-route.tsx`) — reads role from `useSession()`, redirects to `/` if not `ADMIN`
+- **Navbar:** Conditionally render admin-only links by checking `(session.user as { role?: string }).role === "ADMIN"` in `layout.tsx`
+- **Server:** Check role on protected API endpoints via the session returned by `auth.api.getSession()`
+- The role field is not typed by default in the Better Auth client — cast with `(session.user as { role?: string })` on the client side
+
 ## UI
 - shadcn/ui style: `"default"` (Radix UI primitives) — run `bunx shadcn@latest add <component>` from `/client` to add components
 - Theme: shadcn default neutral, defined as CSS variables in `client/src/index.css` (light + dark via oklch, mapped to Tailwind v4 with `@theme inline`)
