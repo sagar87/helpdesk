@@ -55,6 +55,16 @@
 - **`/api/me`:** Explicitly picks fields to return — never exposes raw session object
 - **Min password length:** 12 characters
 
+## Component & Unit Tests
+- **Framework:** Vitest + React Testing Library — config at `client/vitest.config.ts`
+- **Run:** `bun run test` (single run) or `bun run test:watch` (watch mode)
+- **Setup file:** `client/src/test/setup.ts` (loads `@testing-library/jest-dom` matchers)
+- **Test helper:** Use `renderWithQuery` from `@/test/render` to wrap components that use TanStack Query
+- Place test files next to the component: `component.test.tsx` alongside `component.tsx`
+- Mock axios with `vi.mock("axios")` for API calls — never hit real endpoints in component tests
+- Test loading states (skeletons), error states, and rendered data
+- After implementing a new component or page, proactively write component tests
+
 ## E2E Testing
 - **Framework:** Playwright — run with `bun run test:e2e`
 - **Agent:** Always use the `e2e-test-writer` agent to write or update e2e tests — it has the full testing infrastructure context (DB setup, ports, global setup/teardown, conventions)
