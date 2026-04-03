@@ -130,4 +130,17 @@ describe("UsersPage", () => {
     renderWithQuery(<UsersPage />);
     expect(screen.getByRole("button", { name: "Create User" })).toBeInTheDocument();
   });
+
+  it("renders an edit button for each user", async () => {
+    mockedAxios.get.mockResolvedValue({ data: mockUsers });
+    renderWithQuery(<UsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Admin User")).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: "Edit Admin User" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Agent User" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Inactive Agent" })).toBeInTheDocument();
+  });
 });
