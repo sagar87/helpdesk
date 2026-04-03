@@ -60,6 +60,12 @@
 - **Agent:** Always use the `e2e-test-writer` agent to write or update e2e tests — it has the full testing infrastructure context (DB setup, ports, global setup/teardown, conventions)
 - After implementing a new page or user flow, proactively use the `e2e-test-writer` agent to add test coverage
 
+## Data Fetching
+- Use **axios** for all HTTP requests — never use raw `fetch`
+- Use **TanStack Query** (`@tanstack/react-query`) for server state — `QueryClientProvider` is set up in `main.tsx`
+- Pattern: `useQuery({ queryKey: ["resource"], queryFn: () => axios.get<T>("/api/resource").then(res => res.data) })`
+- For mutations use `useMutation` with `queryClient.invalidateQueries` to refresh related queries
+
 ## Conventions
 - Client proxies `/api` requests to the server via Vite config (`VITE_API_URL` overrides the target)
 - Prisma schema lives at `/server/prisma/schema.prisma`

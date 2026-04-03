@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -18,20 +19,10 @@ interface User {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/users", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch users");
-        return res.json();
-      })
-      .then(setUsers)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: users, isPending, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => axios.get<User[]>("/api/users").then((res) => res.data),
+  });
 
   return (
     <div className="px-6 py-8 max-w-5xl mx-auto space-y-6">
@@ -43,13 +34,13 @@ export default function UsersPage() {
       </div>
 
       <div className="rounded-xl border bg-card shadow-sm">
-        {loading ? (
+        {isPending ? (
           <div className="flex items-center justify-center py-16">
             <p className="text-sm text-muted-foreground">Loading users...</p>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{error.message}</p>
           </div>
         ) : (
           <Table>
@@ -63,7 +54,7 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {users?.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
