@@ -67,6 +67,21 @@ app.get("/api/me", requireAuth, (req, res) => {
   res.json({ id, email, name, role, active, emailVerified, image, createdAt });
 });
 
+app.get("/api/users", requireAuth, requireAdmin, async (_req, res) => {
+  const users = await db.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      active: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(users);
+});
+
 app.get("/api/health", async (_req, res) => {
   try {
     await db.$queryRaw`SELECT 1`;

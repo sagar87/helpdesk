@@ -30,7 +30,8 @@
       "Bash(DATABASE_URL=postgresql://postgres:password@localhost:5432/helpdesk_test PORT=3001 BETTER_AUTH_SECRET=test-secret-do-not-use-in-production-1234567890 BETTER_AUTH_URL=http://localhost:3001 TRUSTED_ORIGINS=http://localhost:5174 bun src/index.ts)",
       "Bash(curl -s http://localhost:3001/api/health)",
       "Bash(bunx playwright:*)",
-      "Bash(bun -e \"import f from './e2e/global-teardown.ts'; await f\\(\\);\")"
+      "Bash(bun -e \"import f from './e2e/global-teardown.ts'; await f\\(\\);\")",
+      "Bash(bunx shadcn@latest add table --yes)"
     ]
   }
 }
