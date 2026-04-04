@@ -10,6 +10,7 @@ import AdminRoute from "@/components/admin-route";
 import HomePage from "@/pages/home";
 import LoginPage from "@/pages/login";
 import UsersPage from "@/pages/users";
+import TicketsPage from "@/pages/tickets";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <HomePage />,
+      },
+      {
+        path: "/tickets",
+        element: <TicketsPage />,
       },
       {
         element: <AdminRoute />,

@@ -29,6 +29,14 @@ export default function Layout() {
                 Helpdesk
               </span>
             </NavLink>
+            <NavLink
+              to="/tickets"
+              className={({ isActive }) =>
+                `text-sm font-medium transition ${isActive ? "text-slate-900" : "text-slate-500 hover:text-slate-900"}`
+              }
+            >
+              Tickets
+            </NavLink>
             {(session.user as { role?: string }).role === Role.ADMIN && (
               <NavLink
                 to="/users"

@@ -6,6 +6,7 @@ import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { db } from "./lib/db";
 import { auth } from "./lib/auth";
 import usersRouter from "./routes/users";
+import ticketsRouter from "./routes/tickets";
 import webhooksRouter from "./routes/webhooks";
 
 const app = express();
@@ -70,6 +71,7 @@ app.get("/api/me", requireAuth, (req, res) => {
 });
 
 app.use("/api/users", requireAuth, requireAdmin, usersRouter);
+app.use("/api/tickets", requireAuth, ticketsRouter);
 
 const webhookLimiter = rateLimit({
   windowMs: 60 * 1000,
