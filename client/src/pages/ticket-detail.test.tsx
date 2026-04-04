@@ -72,7 +72,8 @@ function mockApiCalls(ticketData = mockTicket, agentsData = mockAgents) {
 describe("TicketDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedAxios.isAxiosError = vi.fn(() => false) as unknown as typeof axios.isAxiosError;
+    // @ts-expect-error -- jsdom mock for axios type guard
+    mockedAxios.isAxiosError = vi.fn(() => false);
   });
 
   it("shows loading skeleton initially", () => {
@@ -133,30 +134,90 @@ describe("TicketDetailPage", () => {
     expect(screen.getByText("AI generated response")).toBeInTheDocument();
   });
 
-  it("renders status badge", async () => {
+  it("renders status in a dropdown", async () => {
     mockApiCalls();
     renderTicketDetail();
 
     await waitFor(() => {
-      expect(screen.getByText("OPEN")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: /status/i })).toBeInTheDocument();
     });
   });
 
-  it("renders category label", async () => {
+  it("renders category in a dropdown", async () => {
     mockApiCalls();
     renderTicketDetail();
 
     await waitFor(() => {
-      expect(screen.getByText("Technical Question")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: /category/i })).toBeInTheDocument();
     });
   });
 
-  it("renders Uncategorized when category is null", async () => {
-    mockApiCalls({ ...mockTicket, category: null });
+  it("calls PATCH to update status", async () => {
+    mockApiCalls();
+    mockedAxios.patch.mockResolvedValue({ data: { ...mockTicket, status: "RESOLVED" } });
     renderTicketDetail();
 
     await waitFor(() => {
-      expect(screen.getByText("Uncategorized")).toBeInTheDocument();
+      expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+    });
+
+    const trigger = screen.getByRole("combobox", { name: /status/i });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+
+    const option = await screen.findByRole("option", { name: /resolved/i });
+    fireEvent.click(option);
+
+    await waitFor(() => {
+      expect(mockedAxios.patch).toHaveBeenCalledWith(
+        "/api/tickets/ticket-1",
+        { status: "RESOLVED" },
+      );
+    });
+  });
+
+  it("calls PATCH to update category", async () => {
+    mockApiCalls();
+    mockedAxios.patch.mockResolvedValue({ data: { ...mockTicket, category: "REFUND_REQUEST" } });
+    renderTicketDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+    });
+
+    const trigger = screen.getByRole("combobox", { name: /category/i });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+
+    const option = await screen.findByRole("option", { name: /refund/i });
+    fireEvent.click(option);
+
+    await waitFor(() => {
+      expect(mockedAxios.patch).toHaveBeenCalledWith(
+        "/api/tickets/ticket-1",
+        { category: "REFUND_REQUEST" },
+      );
+    });
+  });
+
+  it("calls PATCH with null to set category to uncategorized", async () => {
+    mockApiCalls();
+    mockedAxios.patch.mockResolvedValue({ data: { ...mockTicket, category: null } });
+    renderTicketDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+    });
+
+    const trigger = screen.getByRole("combobox", { name: /category/i });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+
+    const option = await screen.findByRole("option", { name: /uncategorized/i });
+    fireEvent.click(option);
+
+    await waitFor(() => {
+      expect(mockedAxios.patch).toHaveBeenCalledWith(
+        "/api/tickets/ticket-1",
+        { category: null },
+      );
     });
   });
 
@@ -292,7 +353,8 @@ describe("TicketDetailPage", () => {
     const error = new Error("Not Found");
     (error as unknown as { response: { status: number } }).response = { status: 404 };
     mockedAxios.get.mockRejectedValue(error);
-    mockedAxios.isAxiosError = vi.fn(() => true) as unknown as typeof axios.isAxiosError;
+    // @ts-expect-error -- jsdom mock for axios type guard
+    mockedAxios.isAxiosError = vi.fn(() => true);
     renderTicketDetail();
 
     await waitFor(() => {

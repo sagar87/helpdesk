@@ -7,6 +7,11 @@ const assignTicketSchema = z.object({
   assignedTo: z.string().min(1).nullable(),
 });
 
+const updateTicketSchema = z.object({
+  status: z.enum(["OPEN", "RESOLVED", "CLOSED"]).optional(),
+  category: z.enum(["GENERAL_QUESTION", "TECHNICAL_QUESTION", "REFUND_REQUEST"]).nullable().optional(),
+});
+
 const router = Router();
 
 router.get("/", async (_req, res) => {
@@ -47,6 +52,25 @@ router.get("/:id", async (req: Request<{ id: string }>, res) => {
   }
 
   res.json(ticket);
+});
+
+router.patch("/:id", validate(updateTicketSchema), async (req: Request<{ id: string }>, res) => {
+  const ticket = await db.ticket.findUnique({ where: { id: req.params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const updated = await db.ticket.update({
+    where: { id: req.params.id },
+    data: req.body,
+    include: {
+      agent: { select: { id: true, name: true, email: true } },
+      messages: { orderBy: { createdAt: "asc" } },
+    },
+  });
+
+  res.json(updated);
 });
 
 router.patch("/:id/assign", validate(assignTicketSchema), async (req: Request<{ id: string }>, res) => {

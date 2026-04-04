@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Mail, Clock, Tag, User, Bot } from "lucide-react";
+import { ArrowLeft, Mail, Clock, User, Bot } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -53,12 +53,6 @@ const statusStyles: Record<TicketStatus, string> = {
   [TicketStatus.CLOSED]: "bg-secondary text-secondary-foreground",
 };
 
-const categoryLabels: Record<TicketCategory, string> = {
-  [TicketCategory.GENERAL_QUESTION]: "General Question",
-  [TicketCategory.TECHNICAL_QUESTION]: "Technical Question",
-  [TicketCategory.REFUND_REQUEST]: "Refund Request",
-};
-
 function formatDate(date: string) {
   return new Date(date).toLocaleString(undefined, {
     dateStyle: "medium",
@@ -99,36 +93,60 @@ export default function TicketDetailPage() {
     queryFn: () => axios.get<Agent[]>("/api/users").then((res) => res.data),
   });
 
-  const assignMutation = useMutation({
-    mutationFn: (assignedTo: string | null) =>
-      axios.patch(`/api/tickets/${id}/assign`, { assignedTo }).then((res) => res.data),
-    onMutate: async (assignedTo) => {
-      await queryClient.cancelQueries({ queryKey: ["tickets", id] });
-      const previous = queryClient.getQueryData<TicketDetail>(["tickets", id]);
-      if (previous) {
-        const agent = assignedTo
-          ? activeAgents.find((a) => a.id === assignedTo) ?? null
-          : null;
-        queryClient.setQueryData<TicketDetail>(["tickets", id], {
-          ...previous,
-          assignedTo,
-          agent: agent ? { id: agent.id, name: agent.name, email: agent.email } : null,
-        });
-      }
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["tickets", id], context.previous);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["tickets", id] });
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
-    },
-  });
-
   const activeAgents = agents?.filter((a) => a.active) ?? [];
+
+  function useOptimisticMutation<TVar>(
+    mutationFn: (v: TVar) => Promise<unknown>,
+    optimisticUpdate: (previous: TicketDetail, v: TVar) => TicketDetail,
+  ) {
+    return useMutation({
+      mutationFn,
+      onMutate: async (value: TVar) => {
+        await queryClient.cancelQueries({ queryKey: ["tickets", id] });
+        const previous = queryClient.getQueryData<TicketDetail>(["tickets", id]);
+        if (previous) {
+          queryClient.setQueryData<TicketDetail>(["tickets", id], optimisticUpdate(previous, value));
+        }
+        return { previous };
+      },
+      onError: (_err: unknown, _vars: TVar, context: { previous?: TicketDetail } | undefined) => {
+        if (context?.previous) {
+          queryClient.setQueryData(["tickets", id], context.previous);
+        }
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: ["tickets", id] });
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      },
+    });
+  }
+
+  const assignMutation = useOptimisticMutation(
+    (assignedTo: string | null) =>
+      axios.patch(`/api/tickets/${id}/assign`, { assignedTo }).then((res) => res.data),
+    (prev, assignedTo) => {
+      const agent = assignedTo
+        ? activeAgents.find((a) => a.id === assignedTo) ?? null
+        : null;
+      return {
+        ...prev,
+        assignedTo,
+        agent: agent ? { id: agent.id, name: agent.name, email: agent.email } : null,
+      };
+    },
+  );
+
+  const statusMutation = useOptimisticMutation(
+    (status: TicketStatus) =>
+      axios.patch(`/api/tickets/${id}`, { status }).then((res) => res.data),
+    (prev, status) => ({ ...prev, status }),
+  );
+
+  const categoryMutation = useOptimisticMutation(
+    (category: TicketCategory | null) =>
+      axios.patch(`/api/tickets/${id}`, { category }).then((res) => res.data),
+    (prev, category) => ({ ...prev, category }),
+  );
 
   if (isPending) return <TicketDetailSkeleton />;
 
@@ -202,27 +220,53 @@ export default function TicketDetailPage() {
         <div className="space-y-4">
           <Card>
             <CardContent className="p-4 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="space-y-1.5">
+                <label id="status-label" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </label>
-                <div>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyles[ticket.status]}`}>
-                    {ticket.status}
-                  </span>
-                </div>
+                <Select
+                  value={ticket.status}
+                  onValueChange={(v) => statusMutation.mutate(v as TicketStatus)}
+                  disabled={statusMutation.isPending}
+                >
+                  <SelectTrigger className="h-9" aria-labelledby="status-label">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TicketStatus.OPEN}>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[TicketStatus.OPEN]}`}>Open</span>
+                    </SelectItem>
+                    <SelectItem value={TicketStatus.RESOLVED}>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[TicketStatus.RESOLVED]}`}>Resolved</span>
+                    </SelectItem>
+                    <SelectItem value={TicketStatus.CLOSED}>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[TicketStatus.CLOSED]}`}>Closed</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="space-y-1.5">
+                <label id="category-label" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Category
                 </label>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                  {ticket.category
-                    ? categoryLabels[ticket.category]
-                    : "Uncategorized"}
-                </div>
+                <Select
+                  value={ticket.category ?? "UNCATEGORIZED"}
+                  onValueChange={(v) =>
+                    categoryMutation.mutate(v === "UNCATEGORIZED" ? null : (v as TicketCategory))
+                  }
+                  disabled={categoryMutation.isPending}
+                >
+                  <SelectTrigger className="h-9" aria-labelledby="category-label">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNCATEGORIZED">Uncategorized</SelectItem>
+                    <SelectItem value={TicketCategory.GENERAL_QUESTION}>General Question</SelectItem>
+                    <SelectItem value={TicketCategory.TECHNICAL_QUESTION}>Technical Question</SelectItem>
+                    <SelectItem value={TicketCategory.REFUND_REQUEST}>Refund Request</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
