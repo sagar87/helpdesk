@@ -5,11 +5,13 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getFilteredRowModel,
   flexRender,
   type ColumnDef,
   type SortingState,
+  type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, MessageSquare } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, MessageSquare, Search, X } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
 import {
   Table,
@@ -19,6 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Ticket {
@@ -57,6 +68,14 @@ const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "subject",
     header: "Subject",
+    filterFn: (row, _columnId, filterValue: string) => {
+      const search = filterValue.toLowerCase();
+      return (
+        row.original.subject.toLowerCase().includes(search) ||
+        row.original.senderName.toLowerCase().includes(search) ||
+        row.original.senderEmail.toLowerCase().includes(search)
+      );
+    },
     cell: ({ row }) => (
       <span className="font-medium max-w-[300px] truncate block">
         {row.original.subject}
@@ -66,6 +85,7 @@ const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "senderName",
     header: "From",
+    enableColumnFilter: false,
     cell: ({ row }) => (
       <div>
         <div className="text-sm">{row.original.senderName}</div>
@@ -76,6 +96,7 @@ const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "status",
     header: "Status",
+    filterFn: "equals",
     cell: ({ row }) => (
       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[row.original.status]}`}>
         {row.original.status}
@@ -86,6 +107,10 @@ const columns: ColumnDef<Ticket>[] = [
     accessorKey: "category",
     header: "Category",
     sortUndefined: "last",
+    filterFn: (row, _columnId, filterValue: string) => {
+      if (filterValue === "UNCATEGORIZED") return row.original.category === null;
+      return row.original.category === filterValue;
+    },
     cell: ({ row }) => {
       const cat = row.original.category;
       return cat ? (
@@ -101,6 +126,10 @@ const columns: ColumnDef<Ticket>[] = [
     id: "agent",
     accessorFn: (row) => row.agent?.name ?? "",
     header: "Assigned To",
+    filterFn: (row, _columnId, filterValue: string) => {
+      if (filterValue === "UNASSIGNED") return row.original.agent === null;
+      return row.original.agent?.id === filterValue;
+    },
     cell: ({ row }) =>
       row.original.agent ? (
         <span className="text-sm">{row.original.agent.name}</span>
@@ -111,6 +140,7 @@ const columns: ColumnDef<Ticket>[] = [
   {
     accessorKey: "createdAt",
     header: "Created",
+    enableColumnFilter: false,
     cell: ({ row }) => (
       <span className="text-muted-foreground">
         {new Date(row.original.createdAt).toLocaleDateString()}
@@ -122,6 +152,7 @@ const columns: ColumnDef<Ticket>[] = [
     accessorFn: (row) => row._count.messages,
     header: () => null,
     enableSorting: false,
+    enableColumnFilter: false,
     cell: ({ row }) => (
       <div className="flex items-center gap-1 text-muted-foreground">
         <MessageSquare className="h-3.5 w-3.5" />
@@ -131,10 +162,97 @@ const columns: ColumnDef<Ticket>[] = [
   },
 ];
 
+function TicketFilters({ table }: { table: ReturnType<typeof useReactTable<Ticket>> }) {
+  const subjectFilter = (table.getColumn("subject")?.getFilterValue() as string) ?? "";
+  const statusFilter = (table.getColumn("status")?.getFilterValue() as string) ?? "";
+  const categoryFilter = (table.getColumn("category")?.getFilterValue() as string) ?? "";
+  const agentFilter = (table.getColumn("agent")?.getFilterValue() as string) ?? "";
+
+  const hasFilters = subjectFilter || statusFilter || categoryFilter || agentFilter;
+
+  // Collect unique agents from table data
+  const agents = table
+    .getCoreRowModel()
+    .rows.map((r) => r.original.agent)
+    .filter((a): a is NonNullable<typeof a> => a !== null)
+    .filter((a, i, arr) => arr.findIndex((b) => b.id === a.id) === i)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    <div className="flex items-center gap-3 p-4 border-b">
+      <div className="relative flex-1 max-w-sm">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search subject, name, or email..."
+          value={subjectFilter}
+          onChange={(e) => table.getColumn("subject")?.setFilterValue(e.target.value)}
+          className="pl-9 h-9"
+        />
+      </div>
+      <Select
+        value={statusFilter || "ALL"}
+        onValueChange={(v) => table.getColumn("status")?.setFilterValue(v === "ALL" ? "" : v)}
+      >
+        <SelectTrigger className="w-[140px] h-9">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All statuses</SelectItem>
+          <SelectItem value={TicketStatus.OPEN}>Open</SelectItem>
+          <SelectItem value={TicketStatus.RESOLVED}>Resolved</SelectItem>
+          <SelectItem value={TicketStatus.CLOSED}>Closed</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        value={categoryFilter || "ALL"}
+        onValueChange={(v) => table.getColumn("category")?.setFilterValue(v === "ALL" ? "" : v)}
+      >
+        <SelectTrigger className="w-[160px] h-9">
+          <SelectValue placeholder="Category" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All categories</SelectItem>
+          <SelectItem value={TicketCategory.GENERAL_QUESTION}>General</SelectItem>
+          <SelectItem value={TicketCategory.TECHNICAL_QUESTION}>Technical</SelectItem>
+          <SelectItem value={TicketCategory.REFUND_REQUEST}>Refund</SelectItem>
+          <SelectItem value="UNCATEGORIZED">Uncategorized</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        value={agentFilter || "ALL"}
+        onValueChange={(v) => table.getColumn("agent")?.setFilterValue(v === "ALL" ? "" : v)}
+      >
+        <SelectTrigger className="w-[160px] h-9">
+          <SelectValue placeholder="Assigned to" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All agents</SelectItem>
+          <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
+          {agents.map((a) => (
+            <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {hasFilters && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 px-2"
+          onClick={() => table.resetColumnFilters()}
+        >
+          <X className="h-4 w-4 mr-1" />
+          Clear
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function TicketTable() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "createdAt", desc: true },
   ]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const { data: tickets, isPending, error } = useQuery({
     queryKey: ["tickets"],
@@ -144,10 +262,12 @@ export function TicketTable() {
   const table = useReactTable({
     data: tickets ?? [],
     columns,
-    state: { sorting },
+    state: { sorting, columnFilters },
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
   if (isPending) {
@@ -197,39 +317,58 @@ export function TicketTable() {
     );
   }
 
+  const filteredCount = table.getFilteredRowModel().rows.length;
+  const totalCount = tickets.length;
+
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead
-                key={header.id}
-                className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
-                onClick={header.column.getToggleSortingHandler()}
-              >
-                {header.isPlaceholder ? null : (
-                  <div className="flex items-center">
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getCanSort() && <SortIcon column={header.column} />}
-                  </div>
-                )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+    <div>
+      <TicketFilters table={table} />
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
+                  onClick={header.column.getToggleSortingHandler()}
+                >
+                  {header.isPlaceholder ? null : (
+                    <div className="flex items-center">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getCanSort() && <SortIcon column={header.column} />}
+                    </div>
+                  )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                No tickets match the current filters.
               </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      {filteredCount !== totalCount && (
+        <div className="px-4 py-3 border-t text-xs text-muted-foreground">
+          Showing {filteredCount} of {totalCount} tickets
+        </div>
+      )}
+    </div>
   );
 }
