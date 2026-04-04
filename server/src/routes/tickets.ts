@@ -1,5 +1,11 @@
 import { Router, type Request } from "express";
+import { z } from "zod/v4";
 import { db } from "../lib/db";
+import { validate } from "../middleware/validate";
+
+const assignTicketSchema = z.object({
+  assignedTo: z.string().min(1).nullable(),
+});
 
 const router = Router();
 
@@ -41,6 +47,34 @@ router.get("/:id", async (req: Request<{ id: string }>, res) => {
   }
 
   res.json(ticket);
+});
+
+router.patch("/:id/assign", validate(assignTicketSchema), async (req: Request<{ id: string }>, res) => {
+  const { assignedTo } = req.body;
+
+  const ticket = await db.ticket.findUnique({ where: { id: req.params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  if (assignedTo) {
+    const agent = await db.user.findUnique({ where: { id: assignedTo } });
+    if (!agent || !agent.active) {
+      res.status(400).json({ error: "Agent not found or inactive" });
+      return;
+    }
+  }
+
+  const updated = await db.ticket.update({
+    where: { id: req.params.id },
+    data: { assignedTo },
+    include: {
+      agent: { select: { id: true, name: true, email: true } },
+    },
+  });
+
+  res.json(updated);
 });
 
 export default router;

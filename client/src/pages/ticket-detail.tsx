@@ -1,10 +1,17 @@
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Mail, Clock, Tag, User, Bot } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Message {
@@ -12,6 +19,15 @@ interface Message {
   body: string;
   sender: string;
   isAi: boolean;
+  createdAt: string;
+}
+
+interface Agent {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  active: boolean;
   createdAt: string;
 }
 
@@ -69,6 +85,7 @@ function TicketDetailSkeleton() {
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
 
   const { data: ticket, isPending, error } = useQuery({
     queryKey: ["tickets", id],
@@ -76,6 +93,42 @@ export default function TicketDetailPage() {
       axios.get<TicketDetail>(`/api/tickets/${id}`).then((res) => res.data),
     enabled: !!id,
   });
+
+  const { data: agents } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => axios.get<Agent[]>("/api/users").then((res) => res.data),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: (assignedTo: string | null) =>
+      axios.patch(`/api/tickets/${id}/assign`, { assignedTo }).then((res) => res.data),
+    onMutate: async (assignedTo) => {
+      await queryClient.cancelQueries({ queryKey: ["tickets", id] });
+      const previous = queryClient.getQueryData<TicketDetail>(["tickets", id]);
+      if (previous) {
+        const agent = assignedTo
+          ? activeAgents.find((a) => a.id === assignedTo) ?? null
+          : null;
+        queryClient.setQueryData<TicketDetail>(["tickets", id], {
+          ...previous,
+          assignedTo,
+          agent: agent ? { id: agent.id, name: agent.name, email: agent.email } : null,
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["tickets", id], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["tickets", id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+
+  const activeAgents = agents?.filter((a) => a.active) ?? [];
 
   if (isPending) return <TicketDetailSkeleton />;
 
@@ -172,14 +225,29 @@ export default function TicketDetailPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="space-y-1.5">
+                <label id="assign-label" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Assigned To
                 </label>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <User className="h-3.5 w-3.5 text-muted-foreground" />
-                  {ticket.agent ? ticket.agent.name : "Unassigned"}
-                </div>
+                <Select
+                  value={ticket.assignedTo ?? "UNASSIGNED"}
+                  onValueChange={(v) =>
+                    assignMutation.mutate(v === "UNASSIGNED" ? null : v)
+                  }
+                  disabled={assignMutation.isPending}
+                >
+                  <SelectTrigger className="h-9" aria-labelledby="assign-label">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
+                    {activeAgents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">
