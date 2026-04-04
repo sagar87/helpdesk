@@ -6,12 +6,14 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   flexRender,
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
+  type PaginationState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, MessageSquare, Search, X } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, MessageSquare, Search, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
 import {
   Table,
@@ -253,6 +255,10 @@ export function TicketTable() {
     { id: "createdAt", desc: true },
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  });
 
   const { data: tickets, isPending, error } = useQuery({
     queryKey: ["tickets"],
@@ -262,12 +268,17 @@ export function TicketTable() {
   const table = useReactTable({
     data: tickets ?? [],
     columns,
-    state: { sorting, columnFilters },
+    state: { sorting, columnFilters, pagination },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters(updater);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (isPending) {
@@ -364,11 +375,70 @@ export function TicketTable() {
           )}
         </TableBody>
       </Table>
-      {filteredCount !== totalCount && (
-        <div className="px-4 py-3 border-t text-xs text-muted-foreground">
-          Showing {filteredCount} of {totalCount} tickets
+      <div className="flex items-center justify-between px-4 py-3 border-t">
+        <div className="text-xs text-muted-foreground">
+          {filteredCount === totalCount
+            ? `${totalCount} tickets`
+            : `${filteredCount} of ${totalCount} tickets`}
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <Select
+            value={String(pagination.pageSize)}
+            onValueChange={(v) => setPagination({ pageIndex: 0, pageSize: Number(v) })}
+          >
+            <SelectTrigger className="h-8 w-[110px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50, 100].map((size) => (
+                <SelectItem key={size} value={String(size)}>{size} per page</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground min-w-[90px] text-center">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount() || 1}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => table.firstPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => table.lastPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
