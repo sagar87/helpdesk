@@ -11,6 +11,7 @@ import HomePage from "@/pages/home";
 import LoginPage from "@/pages/login";
 import UsersPage from "@/pages/users";
 import TicketsPage from "@/pages/tickets";
+import TicketDetailPage from "@/pages/ticket-detail";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
       {
         path: "/tickets",
         element: <TicketsPage />,
+      },
+      {
+        path: "/tickets/:id",
+        element: <TicketDetailPage />,
       },
       {
         element: <AdminRoute />,
