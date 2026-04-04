@@ -33,7 +33,8 @@
       "Bash(bun -e \"import f from './e2e/global-teardown.ts'; await f\\(\\);\")",
       "Bash(bunx shadcn@latest add table --yes)",
       "Bash(pkill -f \"bun.*index.ts\")",
-      "Bash(pkill -f \"bun.*vite\")"
+      "Bash(pkill -f \"bun.*vite\")",
+      "Bash(bun:*)"
     ]
   }
 }
