@@ -23,3 +23,7 @@ type: project
 **Password policy:** Better Auth requires minimum 12 characters (configured in `server/src/lib/auth.ts`).
 
 **Why:** The health endpoint does `SELECT 1` and 500s if the DB doesn't exist. Playwright's `globalSetup` runs before webServers, so the DB exists by the time the server starts — but a prior `globalTeardown` drop means the first-ever run on a fresh environment needs setup to complete before health checks pass.
+
+**API-only tests (no browser):** Use `request.post()` / `request.get()` from Playwright's `APIRequestContext` (the `{ request }` fixture). Target `http://localhost:3001` directly — do not go through the Vite proxy.
+
+**Webhook auth token:** `INBOUND_EMAIL_WEBHOOK_AUTH_TOKEN="whk_a7f3b9e2c1d4f6a8e0b5c3d7f9a1b4e6"` lives in `server/.env`. Bun auto-loads `.env` when the webServer process starts from `/server`, so the token is available to the test server even though the `playwright.config.ts` webServer command does not set it explicitly. Tests send `Authorization: Bearer whk_a7f3b9e2c1d4f6a8e0b5c3d7f9a1b4e6`.
