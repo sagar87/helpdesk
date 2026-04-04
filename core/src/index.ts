@@ -1,2 +1,2 @@
-export { createUserSchema, updateUserSchema } from "./schemas";
+export { createUserSchema, updateUserSchema, inboundEmailSchema } from "./schemas";
 export { Role } from "./constants";

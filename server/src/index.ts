@@ -6,6 +6,7 @@ import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { db } from "./lib/db";
 import { auth } from "./lib/auth";
 import usersRouter from "./routes/users";
+import webhooksRouter from "./routes/webhooks";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,6 +70,14 @@ app.get("/api/me", requireAuth, (req, res) => {
 });
 
 app.use("/api/users", requireAuth, requireAdmin, usersRouter);
+
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/webhooks", webhookLimiter, webhooksRouter);
 
 app.get("/api/health", async (_req, res) => {
   try {

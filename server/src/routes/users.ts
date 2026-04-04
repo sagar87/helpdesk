@@ -1,22 +1,10 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
-import { z } from "zod/v4";
+import { Router, type Request } from "express";
 import { createUserSchema, updateUserSchema } from "core";
 import { hashPassword } from "better-auth/crypto";
 import { db } from "../lib/db";
 import { auth } from "../lib/auth";
 import { Role } from "../generated/prisma/enums";
-
-function validate(schema: z.ZodType) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const parsed = schema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
-      return;
-    }
-    req.body = parsed.data;
-    next();
-  };
-}
+import { validate } from "../middleware/validate";
 
 const router = Router();
 

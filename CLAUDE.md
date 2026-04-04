@@ -50,10 +50,18 @@
 - Always use theme tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, `text-destructive`, etc.) — never hardcode colors
 - Installed components: button, input, label, card
 
+## Email-to-Ticket Ingestion
+- **Webhook endpoint:** `POST /api/webhooks/email/inbound` — receives JSON `{ from, fromName?, subject, body, inReplyToTicketId? }`
+- **Auth:** Bearer token via `Authorization` header, validated against `INBOUND_EMAIL_WEBHOOK_AUTH_TOKEN` env var
+- **Rate limiting:** 60 requests per minute on `/api/webhooks`
+- **Threading:** If `inReplyToTicketId` is provided and the ticket exists, a message is appended (and ticket reopened if resolved/closed); otherwise a new ticket is created
+- **Ticket service:** Reusable functions in `server/src/services/ticket.service.ts` — `createTicket()`, `addMessageToTicket()`, `findTicketById()`
+- **Provider-agnostic:** No email provider integrated yet — wire any provider (SendGrid, Postmark, etc.) to POST to this endpoint
+
 ## Security
 - **Helmet:** Sets security headers (CSP, X-Frame-Options, HSTS, etc.)
 - **CORS:** Restricted to `TRUSTED_ORIGINS` with `credentials: true`
-- **Rate limiting:** Auth sign-in endpoint limited to 10 attempts per 15 minutes per IP
+- **Rate limiting:** Auth sign-in endpoint limited to 10 attempts per 15 minutes per IP; webhook endpoint limited to 60 per minute
 - **Body size:** `express.json({ limit: "50kb" })`
 - **`/api/me`:** Explicitly picks fields to return — never exposes raw session object
 - **Min password length:** 12 characters
@@ -86,3 +94,4 @@
 - Use `@/` import alias in the client (maps to `/client/src/`)
 - Shared validation schemas and types live in `/core` — import via `"core"` (workspace package). Place schemas that are used by both client and server here to avoid duplication.
 - Do not wrap Express route handlers in try/catch — let errors propagate to the error handler
+- **Validation middleware:** Use `validate()` from `server/src/middleware/validate.ts` for Zod request body validation in all Express routes — do not duplicate this function in route files
