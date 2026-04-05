@@ -1,5 +1,7 @@
 import { Router, type Request } from "express";
 import { z } from "zod/v4";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { db } from "../lib/db";
 import { validate } from "../middleware/validate";
 
@@ -129,6 +131,35 @@ router.patch("/:id/assign", validate(assignTicketSchema), async (req: Request<{ 
   });
 
   res.json(updated);
+});
+
+const polishMessageSchema = z.object({
+  body: z.string().trim().min(1, "Message body is required"),
+});
+
+router.post("/:id/polish", validate(polishMessageSchema), async (req: Request<{ id: string }>, res) => {
+  const ticket = await db.ticket.findUnique({
+    where: { id: req.params.id },
+    include: { messages: { orderBy: { createdAt: "desc" }, take: 5 } },
+  });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const conversationContext = ticket.messages
+    .reverse()
+    .map((m) => `[${m.sender}]: ${m.body}`)
+    .join("\n");
+
+  const { text } = await generateText({
+    model: openai("gpt-5-nano"),
+    system:
+      "You are a helpdesk agent. Polish the following reply to be professional, clear, and helpful. Keep the same meaning and intent. Address the customer by name and sign off with the agent's name. Return only the polished text with no extra commentary.",
+    prompt: `Ticket subject: ${ticket.subject}\n\nCustomer name: ${ticket.senderName}\nAgent name: ${req.user!.name}\n\nRecent conversation:\n${conversationContext}\n\nDraft reply to polish:\n${req.body.body}`,
+  });
+
+  res.json({ polished: text });
 });
 
 export default router;

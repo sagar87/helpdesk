@@ -143,6 +143,7 @@ export default function TicketDetailPage() {
           ))}
 
           <ReplyForm
+            ticketId={id!}
             onSubmit={(body) => replyMutation.mutate(body)}
             isPending={replyMutation.isPending}
             isError={replyMutation.isError}
