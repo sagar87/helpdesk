@@ -17,11 +17,11 @@ const mockTicket = {
   senderName: "Jane Doe",
   status: "OPEN" as const,
   category: "TECHNICAL_QUESTION" as const,
-  aiSummary: null,
-  assignedTo: null,
+  aiSummary: null as string | null,
+  assignedTo: null as string | null,
   createdAt: "2026-03-15T10:00:00.000Z",
   updatedAt: "2026-03-15T12:00:00.000Z",
-  agent: null,
+  agent: null as { id: string; name: string; email: string } | null,
   messages: [
     {
       id: "msg-1",

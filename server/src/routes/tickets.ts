@@ -73,6 +73,36 @@ router.patch("/:id", validate(updateTicketSchema), async (req: Request<{ id: str
   res.json(updated);
 });
 
+const createMessageSchema = z.object({
+  body: z.string().trim().min(1, "Message body is required"),
+});
+
+router.post("/:id/messages", validate(createMessageSchema), async (req: Request<{ id: string }>, res) => {
+  const ticket = await db.ticket.findUnique({ where: { id: req.params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const message = await db.message.create({
+    data: {
+      ticketId: req.params.id,
+      body: req.body.body,
+      sender: req.user!.email,
+    },
+  });
+
+  // Reopen the ticket if it was resolved or closed
+  if (ticket.status !== "OPEN") {
+    await db.ticket.update({
+      where: { id: req.params.id },
+      data: { status: "OPEN" },
+    });
+  }
+
+  res.status(201).json(message);
+});
+
 router.patch("/:id/assign", validate(assignTicketSchema), async (req: Request<{ id: string }>, res) => {
   const { assignedTo } = req.body;
 

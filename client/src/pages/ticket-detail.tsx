@@ -1,10 +1,12 @@
+import { useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Mail, Clock, User, Bot } from "lucide-react";
+import { ArrowLeft, Mail, Clock, User, Bot, Send } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -148,6 +150,20 @@ export default function TicketDetailPage() {
     (prev, category) => ({ ...prev, category }),
   );
 
+  const replyRef = useRef<HTMLTextAreaElement>(null);
+  const [replyError, setReplyError] = useState("");
+
+  const replyMutation = useMutation({
+    mutationFn: (body: string) =>
+      axios.post(`/api/tickets/${id}/messages`, { body }).then((res) => res.data),
+    onSuccess: () => {
+      if (replyRef.current) replyRef.current.value = "";
+      setReplyError("");
+      queryClient.invalidateQueries({ queryKey: ["tickets", id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+
   if (isPending) return <TicketDetailSkeleton />;
 
   if (error) {
@@ -214,6 +230,53 @@ export default function TicketDetailPage() {
               </CardContent>
             </Card>
           ))}
+
+          <Card>
+            <CardContent className="p-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const body = replyRef.current?.value.trim();
+                  if (!body) {
+                    setReplyError("Reply cannot be empty.");
+                    return;
+                  }
+                  setReplyError("");
+                  replyMutation.mutate(body);
+                }}
+              >
+                <Textarea
+                  ref={replyRef}
+                  placeholder="Write a reply..."
+                  rows={3}
+                  className={`mb-1 resize-none ${replyError ? "border-destructive" : ""}`}
+                  disabled={replyMutation.isPending}
+                  onChange={() => { if (replyError) setReplyError(""); }}
+                />
+                {replyError && (
+                  <p className="text-xs text-destructive mb-2">{replyError}</p>
+                )}
+                {!replyError && <div className="mb-2" />}
+                <div className="flex items-center justify-between">
+                  {replyMutation.isError && (
+                    <p className="text-xs text-destructive">
+                      Failed to send reply. Please try again.
+                    </p>
+                  )}
+                  <div className="ml-auto">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={replyMutation.isPending}
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      {replyMutation.isPending ? "Sending..." : "Send Reply"}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}
