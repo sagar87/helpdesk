@@ -1,4 +1,5 @@
-import { screen, waitFor, fireEvent } from "@testing-library/react";
+import { screen, waitFor, fireEvent, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -371,5 +372,134 @@ describe("TicketDetailPage", () => {
     });
 
     expect(screen.getByText("Back to tickets")).toBeInTheDocument();
+  });
+
+  describe("Reply form", () => {
+    it("renders the reply textarea and send button", async () => {
+      mockApiCalls();
+      renderTicketDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+      });
+
+      expect(screen.getByPlaceholderText("Write a reply...")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /send reply/i })).toBeInTheDocument();
+    });
+
+    it("shows validation error when submitting empty reply", async () => {
+      mockApiCalls();
+      renderTicketDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+      expect(screen.getByText("Reply cannot be empty.")).toBeInTheDocument();
+      expect(mockedAxios.post).not.toHaveBeenCalled();
+    });
+
+    it("shows validation error when submitting whitespace-only reply", async () => {
+      const user = userEvent.setup();
+      mockApiCalls();
+      renderTicketDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByPlaceholderText("Write a reply..."), "   ");
+      fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+      expect(screen.getByText("Reply cannot be empty.")).toBeInTheDocument();
+      expect(mockedAxios.post).not.toHaveBeenCalled();
+    });
+
+    it("clears validation error when user starts typing", async () => {
+      const user = userEvent.setup();
+      mockApiCalls();
+      renderTicketDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+      expect(screen.getByText("Reply cannot be empty.")).toBeInTheDocument();
+
+      await user.type(screen.getByPlaceholderText("Write a reply..."), "a");
+      expect(screen.queryByText("Reply cannot be empty.")).not.toBeInTheDocument();
+    });
+
+    it("sends reply and clears textarea on success", async () => {
+      const user = userEvent.setup();
+      mockApiCalls();
+      mockedAxios.post.mockResolvedValue({
+        data: { id: "msg-3", body: "Here is my reply", sender: "agent@helpdesk.com", isAi: false, createdAt: "2026-03-15T13:00:00.000Z" },
+      });
+
+      renderTicketDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+      });
+
+      const textarea = screen.getByPlaceholderText("Write a reply...");
+      await user.type(textarea, "Here is my reply");
+      fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+      await waitFor(() => {
+        expect(mockedAxios.post).toHaveBeenCalledWith(
+          "/api/tickets/ticket-1/messages",
+          { body: "Here is my reply" },
+        );
+      });
+
+      await waitFor(() => {
+        expect(textarea).toHaveValue("");
+      });
+    });
+
+    it("shows error message when reply fails", async () => {
+      const user = userEvent.setup();
+      mockApiCalls();
+      mockedAxios.post.mockRejectedValue(new Error("Server error"));
+
+      renderTicketDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByPlaceholderText("Write a reply..."), "My reply");
+      fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Failed to send reply. Please try again.")).toBeInTheDocument();
+      });
+    });
+
+    it("disables textarea and button while sending", async () => {
+      const user = userEvent.setup();
+      mockApiCalls();
+      // Never resolve to keep pending state
+      mockedAxios.post.mockReturnValue(new Promise(() => {}));
+
+      renderTicketDetail();
+
+      await waitFor(() => {
+        expect(screen.getByText("Cannot reset password")).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByPlaceholderText("Write a reply..."), "Sending...");
+      fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText("Write a reply...")).toBeDisabled();
+        expect(screen.getByRole("button", { name: /sending/i })).toBeDisabled();
+      });
+    });
   });
 });

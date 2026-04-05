@@ -1,19 +1,13 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Mail, Clock, User, Bot, Send } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
+import { MessageCard } from "@/components/message-card";
+import { ReplyForm } from "@/components/reply-form";
+import { TicketSidebar } from "@/components/ticket-sidebar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Message {
@@ -48,12 +42,6 @@ interface TicketDetail {
   agent: { id: string; name: string; email: string } | null;
   messages: Message[];
 }
-
-const statusStyles: Record<TicketStatus, string> = {
-  [TicketStatus.OPEN]: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-  [TicketStatus.RESOLVED]: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-  [TicketStatus.CLOSED]: "bg-secondary text-secondary-foreground",
-};
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString(undefined, {
@@ -150,15 +138,13 @@ export default function TicketDetailPage() {
     (prev, category) => ({ ...prev, category }),
   );
 
-  const replyRef = useRef<HTMLTextAreaElement>(null);
-  const [replyError, setReplyError] = useState("");
+  const [replyResetKey, setReplyResetKey] = useState(0);
 
   const replyMutation = useMutation({
     mutationFn: (body: string) =>
       axios.post(`/api/tickets/${id}/messages`, { body }).then((res) => res.data),
     onSuccess: () => {
-      if (replyRef.current) replyRef.current.value = "";
-      setReplyError("");
+      setReplyResetKey((k) => k + 1);
       queryClient.invalidateQueries({ queryKey: ["tickets", id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     },
@@ -204,195 +190,39 @@ export default function TicketDetailPage() {
         {/* Messages */}
         <div className="space-y-4">
           {ticket.messages.map((message) => (
-            <Card key={message.id}>
-              <CardHeader className="pb-2 pt-4 px-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    {message.isAi ? (
-                      <>
-                        <Bot className="h-4 w-4 text-violet-500" />
-                        <span>AI Assistant</span>
-                      </>
-                    ) : (
-                      <>
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{message.sender}</span>
-                      </>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(message.createdAt)}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0">
-                <p className="text-sm whitespace-pre-wrap">{message.body}</p>
-              </CardContent>
-            </Card>
+            <MessageCard
+              key={message.id}
+              sender={message.sender}
+              body={message.body}
+              isAi={message.isAi}
+              createdAt={message.createdAt}
+            />
           ))}
 
-          <Card>
-            <CardContent className="p-4">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const body = replyRef.current?.value.trim();
-                  if (!body) {
-                    setReplyError("Reply cannot be empty.");
-                    return;
-                  }
-                  setReplyError("");
-                  replyMutation.mutate(body);
-                }}
-              >
-                <Textarea
-                  ref={replyRef}
-                  placeholder="Write a reply..."
-                  rows={3}
-                  className={`mb-1 resize-none ${replyError ? "border-destructive" : ""}`}
-                  disabled={replyMutation.isPending}
-                  onChange={() => { if (replyError) setReplyError(""); }}
-                />
-                {replyError && (
-                  <p className="text-xs text-destructive mb-2">{replyError}</p>
-                )}
-                {!replyError && <div className="mb-2" />}
-                <div className="flex items-center justify-between">
-                  {replyMutation.isError && (
-                    <p className="text-xs text-destructive">
-                      Failed to send reply. Please try again.
-                    </p>
-                  )}
-                  <div className="ml-auto">
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={replyMutation.isPending}
-                    >
-                      <Send className="h-4 w-4 mr-1" />
-                      {replyMutation.isPending ? "Sending..." : "Send Reply"}
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+          <ReplyForm
+            onSubmit={(body) => replyMutation.mutate(body)}
+            isPending={replyMutation.isPending}
+            isError={replyMutation.isError}
+            resetKey={replyResetKey}
+          />
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div className="space-y-1.5">
-                <label id="status-label" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Status
-                </label>
-                <Select
-                  value={ticket.status}
-                  onValueChange={(v) => statusMutation.mutate(v as TicketStatus)}
-                  disabled={statusMutation.isPending}
-                >
-                  <SelectTrigger className="h-9" aria-labelledby="status-label">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={TicketStatus.OPEN}>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[TicketStatus.OPEN]}`}>Open</span>
-                    </SelectItem>
-                    <SelectItem value={TicketStatus.RESOLVED}>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[TicketStatus.RESOLVED]}`}>Resolved</span>
-                    </SelectItem>
-                    <SelectItem value={TicketStatus.CLOSED}>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[TicketStatus.CLOSED]}`}>Closed</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label id="category-label" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Category
-                </label>
-                <Select
-                  value={ticket.category ?? "UNCATEGORIZED"}
-                  onValueChange={(v) =>
-                    categoryMutation.mutate(v === "UNCATEGORIZED" ? null : (v as TicketCategory))
-                  }
-                  disabled={categoryMutation.isPending}
-                >
-                  <SelectTrigger className="h-9" aria-labelledby="category-label">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UNCATEGORIZED">Uncategorized</SelectItem>
-                    <SelectItem value={TicketCategory.GENERAL_QUESTION}>General Question</SelectItem>
-                    <SelectItem value={TicketCategory.TECHNICAL_QUESTION}>Technical Question</SelectItem>
-                    <SelectItem value={TicketCategory.REFUND_REQUEST}>Refund Request</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label id="assign-label" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Assigned To
-                </label>
-                <Select
-                  value={ticket.assignedTo ?? "UNASSIGNED"}
-                  onValueChange={(v) =>
-                    assignMutation.mutate(v === "UNASSIGNED" ? null : v)
-                  }
-                  disabled={assignMutation.isPending}
-                >
-                  <SelectTrigger className="h-9" aria-labelledby="assign-label">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
-                    {activeAgents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Customer
-                </label>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                  {ticket.senderEmail}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Last Updated
-                </label>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  {formatDate(ticket.updatedAt)}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {ticket.aiSummary && (
-            <Card>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Bot className="h-3.5 w-3.5 text-violet-500" />
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    AI Summary
-                  </label>
-                </div>
-                <p className="text-sm">{ticket.aiSummary}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        <TicketSidebar
+          status={ticket.status}
+          category={ticket.category}
+          assignedTo={ticket.assignedTo}
+          senderEmail={ticket.senderEmail}
+          updatedAt={ticket.updatedAt}
+          aiSummary={ticket.aiSummary}
+          agents={activeAgents}
+          onStatusChange={(s) => statusMutation.mutate(s)}
+          onCategoryChange={(c) => categoryMutation.mutate(c)}
+          onAssignChange={(a) => assignMutation.mutate(a)}
+          statusPending={statusMutation.isPending}
+          categoryPending={categoryMutation.isPending}
+          assignPending={assignMutation.isPending}
+        />
       </div>
     </div>
   );
