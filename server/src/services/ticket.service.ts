@@ -4,6 +4,7 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import type { Ticket } from "../generated/prisma/client";
 import { db } from "../lib/db";
+import { Sentry } from "../lib/sentry";
 
 const knowledgeBase = readFileSync(join(__dirname, "../../knowledge-base.md"), "utf-8");
 
@@ -73,7 +74,7 @@ export async function classifyTicket(ticket: Ticket) {
       data: { category },
     });
   } catch (err) {
-    console.error(`Failed to classify ticket ${ticket.id}:`, err);
+    Sentry.captureException(err, { tags: { ticketId: ticket.id, operation: "classify" } });
   }
 }
 
@@ -103,6 +104,6 @@ export async function autoResolveTicket(ticket: Ticket) {
       }),
     ]);
   } catch (err) {
-    console.error(`Failed to auto-resolve ticket ${ticket.id}:`, err);
+    Sentry.captureException(err, { tags: { ticketId: ticket.id, operation: "auto-resolve" } });
   }
 }

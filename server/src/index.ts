@@ -1,3 +1,4 @@
+import { Sentry } from "./lib/sentry";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -92,6 +93,8 @@ app.get("/api/health", async (_req, res) => {
     res.status(500).json({ status: "error" });
   }
 });
+
+Sentry.setupExpressErrorHandler(app);
 
 app.listen(PORT, async () => {
   await boss.start();

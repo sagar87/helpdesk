@@ -44,8 +44,8 @@ router.get("/stats/daily", async (_req, res) => {
     counts[d.toISOString().slice(0, 10)] = 0;
   }
   for (const t of tickets) {
-    const key = t.createdAt.toISOString().slice(0, 10);
-    if (key in counts) counts[key]++;
+    const key = t.createdAt!.toISOString().slice(0, 10);
+    if (counts[key] !== undefined) counts[key]++;
   }
 
   const daily = Object.entries(counts).map(([date, count]) => ({ date, count }));
