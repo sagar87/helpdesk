@@ -16,6 +16,42 @@ const updateTicketSchema = z.object({
 
 const router = Router();
 
+router.get("/stats", async (_req, res) => {
+  const [total, open, resolved, closed, autoResolved] = await Promise.all([
+    db.ticket.count(),
+    db.ticket.count({ where: { status: "OPEN" } }),
+    db.ticket.count({ where: { status: "RESOLVED" } }),
+    db.ticket.count({ where: { status: "CLOSED" } }),
+    db.ticket.count({ where: { autoResolved: true } }),
+  ]);
+  res.json({ total, open, resolved, closed, autoResolved });
+});
+
+router.get("/stats/daily", async (_req, res) => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+  const tickets = await db.ticket.findMany({
+    where: { createdAt: { gte: thirtyDaysAgo } },
+    select: { createdAt: true },
+  });
+
+  const counts: Record<string, number> = {};
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(thirtyDaysAgo);
+    d.setDate(d.getDate() + i);
+    counts[d.toISOString().slice(0, 10)] = 0;
+  }
+  for (const t of tickets) {
+    const key = t.createdAt.toISOString().slice(0, 10);
+    if (key in counts) counts[key]++;
+  }
+
+  const daily = Object.entries(counts).map(([date, count]) => ({ date, count }));
+  res.json(daily);
+});
+
 router.get("/", async (_req, res) => {
   const tickets = await db.ticket.findMany({
     select: {
