@@ -79,7 +79,7 @@
 ## E2E Testing
 - **Framework:** Playwright — run with `bun run test:e2e`
 - **Agent:** Always use the `e2e-test-writer` agent to write or update e2e tests — it has the full testing infrastructure context (DB setup, ports, global setup/teardown, conventions)
-- After implementing a new page or user flow, proactively use the `e2e-test-writer` agent to add test coverage
+- **E2E tests are only for what unit tests cannot cover:** real auth flows (session cookies, login/logout, redirects), role-based access with real sessions, full CRUD integration against the database, and API webhook endpoints hitting the real server. Do not duplicate rendering, validation, or UI interaction tests that are already covered by Vitest component tests.
 
 ## Data Fetching
 - Use **axios** for all HTTP requests — never use raw `fetch`
