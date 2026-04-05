@@ -10,6 +10,7 @@ import ticketsRouter from "./routes/tickets";
 import webhooksRouter from "./routes/webhooks";
 import { boss } from "./lib/queue";
 import { startClassifyWorker } from "./workers/classify";
+import { startAutoResolveWorker } from "./workers/auto-resolve";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -95,6 +96,7 @@ app.get("/api/health", async (_req, res) => {
 app.listen(PORT, async () => {
   await boss.start();
   await startClassifyWorker();
+  await startAutoResolveWorker();
   console.log(`Server running on port ${PORT}`);
 });
 

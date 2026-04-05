@@ -8,6 +8,7 @@ import {
   findTicketById,
 } from "../services/ticket.service";
 import { enqueueClassifyTicket } from "../workers/classify";
+import { enqueueAutoResolve } from "../workers/auto-resolve";
 
 const router = Router();
 
@@ -38,6 +39,7 @@ router.post(
     });
 
     await enqueueClassifyTicket(ticket);
+    await enqueueAutoResolve(ticket);
 
     res.status(201).json({ received: true, ticketId: ticket.id });
   },

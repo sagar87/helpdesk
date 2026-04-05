@@ -61,17 +61,18 @@ model Session {
 }
 
 model Ticket {
-  id          String          @id @default(uuid())
-  subject     String
-  body        String
-  senderEmail String
-  senderName  String
-  status      TicketStatus    @default(OPEN)
-  category    TicketCategory?
-  aiSummary   String?
-  assignedTo  String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id           String          @id @default(uuid())
+  subject      String
+  body         String
+  senderEmail  String
+  senderName   String
+  status       TicketStatus    @default(OPEN)
+  category     TicketCategory?
+  aiSummary    String?
+  autoResolved Boolean         @default(false)
+  assignedTo   String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   agent    User?     @relation("AssignedAgent", fields: [assignedTo], references: [id])
   messages Message[]

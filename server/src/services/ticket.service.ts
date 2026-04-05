@@ -1,7 +1,11 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import type { Ticket } from "../generated/prisma/client";
 import { db } from "../lib/db";
+
+const knowledgeBase = readFileSync(join(__dirname, "../../knowledge-base.md"), "utf-8");
 
 export async function createTicket(data: {
   subject: string;
@@ -70,5 +74,35 @@ export async function classifyTicket(ticket: Ticket) {
     });
   } catch (err) {
     console.error(`Failed to classify ticket ${ticket.id}:`, err);
+  }
+}
+
+export async function autoResolveTicket(ticket: Ticket) {
+  try {
+    const { text } = await generateText({
+      model: openai("gpt-5-nano"),
+      system: `You are a helpful support agent. Answer the customer's question using ONLY the following knowledge base. If the knowledge base does not contain enough information to answer confidently, respond with exactly CANNOT_RESOLVE and nothing else. Otherwise, provide a helpful, professional answer addressed to the customer by name.\n\n---\n${knowledgeBase}`,
+      prompt: `Customer name: ${ticket.senderName}\nSubject: ${ticket.subject}\n\nMessage: ${ticket.body}`,
+    });
+
+    const trimmed = text.trim();
+    if (trimmed === "CANNOT_RESOLVE") return;
+
+    await db.$transaction([
+      db.message.create({
+        data: {
+          ticketId: ticket.id,
+          body: trimmed,
+          sender: "AI Assistant",
+          isAi: true,
+        },
+      }),
+      db.ticket.update({
+        where: { id: ticket.id },
+        data: { status: "RESOLVED", autoResolved: true },
+      }),
+    ]);
+  } catch (err) {
+    console.error(`Failed to auto-resolve ticket ${ticket.id}:`, err);
   }
 }
