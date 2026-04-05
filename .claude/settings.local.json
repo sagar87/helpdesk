@@ -37,7 +37,10 @@
       "Bash(bun:*)",
       "Bash(curl -s http://localhost:3000/api/health)",
       "Bash(curl -s -X POST http://localhost:3000/api/webhooks/email/inbound -H 'Content-Type: application/json' -H 'Authorization: Bearer whk_a7f3b9e2c1d4f6a8e0b5c3d7f9a1b4e6' -d '{:*)",
-      "Bash(python3 -m json.tool)"
+      "Bash(python3 -m json.tool)",
+      "Bash(docker rm:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)"
     ]
   }
 }

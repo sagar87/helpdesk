@@ -1,4 +1,5 @@
 import { Sentry } from "./lib/sentry";
+import path from "path";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -95,6 +96,13 @@ app.get("/api/health", async (_req, res) => {
 });
 
 Sentry.setupExpressErrorHandler(app);
+
+// Serve client static files in production
+const clientDist = path.join(__dirname, "../../client/dist");
+app.use(express.static(clientDist));
+app.get("/{*path}", (_req, res) => {
+  res.sendFile(path.join(clientDist, "index.html"));
+});
 
 app.listen(PORT, async () => {
   await boss.start();
