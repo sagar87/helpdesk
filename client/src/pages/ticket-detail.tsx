@@ -4,68 +4,13 @@ import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
+import type { Agent, TicketDetail } from "@/types";
 import { MessageCard } from "@/components/message-card";
 import { ReplyForm } from "@/components/reply-form";
+import { TicketHeader } from "@/components/ticket-header";
 import { TicketSidebar } from "@/components/ticket-sidebar";
+import { TicketDetailSkeleton } from "@/components/ticket-detail-skeleton";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-
-interface Message {
-  id: string;
-  body: string;
-  sender: string;
-  isAi: boolean;
-  createdAt: string;
-}
-
-interface Agent {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  active: boolean;
-  createdAt: string;
-}
-
-interface TicketDetail {
-  id: string;
-  subject: string;
-  body: string;
-  senderEmail: string;
-  senderName: string;
-  status: TicketStatus;
-  category: TicketCategory | null;
-  aiSummary: string | null;
-  assignedTo: string | null;
-  createdAt: string;
-  updatedAt: string;
-  agent: { id: string; name: string; email: string } | null;
-  messages: Message[];
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
-function TicketDetailSkeleton() {
-  return (
-    <div className="px-6 py-8 max-w-4xl mx-auto space-y-6">
-      <Skeleton className="h-5 w-32" />
-      <Skeleton className="h-8 w-96" />
-      <div className="grid grid-cols-[1fr_280px] gap-6">
-        <div className="space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
-        <Skeleton className="h-48 w-full rounded-xl" />
-      </div>
-    </div>
-  );
-}
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -177,14 +122,12 @@ export default function TicketDetailPage() {
         </Button>
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{ticket.subject}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          From {ticket.senderName} &lt;{ticket.senderEmail}&gt;
-          {" "}&middot;{" "}
-          {formatDate(ticket.createdAt)}
-        </p>
-      </div>
+      <TicketHeader
+        subject={ticket.subject}
+        senderName={ticket.senderName}
+        senderEmail={ticket.senderEmail}
+        createdAt={ticket.createdAt}
+      />
 
       <div className="grid grid-cols-[1fr_280px] gap-6">
         {/* Messages */}

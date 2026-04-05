@@ -34,19 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface Ticket {
-  id: string;
-  subject: string;
-  senderEmail: string;
-  senderName: string;
-  status: TicketStatus;
-  category: TicketCategory | null;
-  assignedTo: string | null;
-  createdAt: string;
-  agent: { id: string; name: string } | null;
-  _count: { messages: number };
-}
+import type { TicketSummary } from "@/types";
 
 const statusStyles: Record<TicketStatus, string> = {
   [TicketStatus.OPEN]: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
@@ -67,7 +55,7 @@ function SortIcon({ column }: { column: { getIsSorted: () => false | "asc" | "de
   return <ArrowUpDown className="ml-1 h-3.5 w-3.5 opacity-40" />;
 }
 
-const columns: ColumnDef<Ticket>[] = [
+const columns: ColumnDef<TicketSummary>[] = [
   {
     accessorKey: "subject",
     header: "Subject",
@@ -165,7 +153,7 @@ const columns: ColumnDef<Ticket>[] = [
   },
 ];
 
-function TicketFilters({ table }: { table: ReturnType<typeof useReactTable<Ticket>> }) {
+function TicketFilters({ table }: { table: ReturnType<typeof useReactTable<TicketSummary>> }) {
   const subjectFilter = (table.getColumn("subject")?.getFilterValue() as string) ?? "";
   const statusFilter = (table.getColumn("status")?.getFilterValue() as string) ?? "";
   const categoryFilter = (table.getColumn("category")?.getFilterValue() as string) ?? "";
@@ -264,7 +252,7 @@ export function TicketTable() {
 
   const { data: tickets, isPending, error } = useQuery({
     queryKey: ["tickets"],
-    queryFn: () => axios.get<Ticket[]>("/api/tickets").then((res) => res.data),
+    queryFn: () => axios.get<TicketSummary[]>("/api/tickets").then((res) => res.data),
   });
 
   const table = useReactTable({

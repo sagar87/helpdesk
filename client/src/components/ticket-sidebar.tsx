@@ -1,5 +1,6 @@
 import { Mail, Clock, Bot } from "lucide-react";
 import { TicketStatus, TicketCategory } from "core";
+import type { Agent } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -20,12 +21,6 @@ function formatDate(date: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
-}
-
-interface Agent {
-  id: string;
-  name: string;
-  email: string;
 }
 
 interface TicketSidebarProps {
