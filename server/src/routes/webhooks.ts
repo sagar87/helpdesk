@@ -6,8 +6,8 @@ import {
   createTicket,
   addMessageToTicket,
   findTicketById,
-  classifyTicket,
 } from "../services/ticket.service";
+import { enqueueClassifyTicket } from "../workers/classify";
 
 const router = Router();
 
@@ -37,8 +37,7 @@ router.post(
       senderName: fromName ?? from,
     });
 
-    // Fire-and-forget: classify in the background
-    classifyTicket(ticket);
+    await enqueueClassifyTicket(ticket);
 
     res.status(201).json({ received: true, ticketId: ticket.id });
   },

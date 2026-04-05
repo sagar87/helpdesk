@@ -8,6 +8,8 @@ import { auth } from "./lib/auth";
 import usersRouter from "./routes/users";
 import ticketsRouter from "./routes/tickets";
 import webhooksRouter from "./routes/webhooks";
+import { boss } from "./lib/queue";
+import { startClassifyWorker } from "./workers/classify";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -90,7 +92,9 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await boss.start();
+  await startClassifyWorker();
   console.log(`Server running on port ${PORT}`);
 });
 
