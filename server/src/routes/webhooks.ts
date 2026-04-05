@@ -6,6 +6,7 @@ import {
   createTicket,
   addMessageToTicket,
   findTicketById,
+  classifyTicket,
 } from "../services/ticket.service";
 
 const router = Router();
@@ -35,6 +36,9 @@ router.post(
       senderEmail: from,
       senderName: fromName ?? from,
     });
+
+    // Fire-and-forget: classify in the background
+    classifyTicket(ticket);
 
     res.status(201).json({ received: true, ticketId: ticket.id });
   },

@@ -162,4 +162,37 @@ router.post("/:id/polish", validate(polishMessageSchema), async (req: Request<{ 
   res.json({ polished: text });
 });
 
+router.post("/:id/summarize", async (req: Request<{ id: string }>, res) => {
+  const ticket = await db.ticket.findUnique({
+    where: { id: req.params.id },
+    include: { messages: { orderBy: { createdAt: "asc" } } },
+  });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const conversation = ticket.messages
+    .map((m) => `[${m.sender}]: ${m.body}`)
+    .join("\n");
+
+  const { text } = await generateText({
+    model: openai("gpt-5-nano"),
+    system:
+      "You are a helpdesk assistant. Summarize the following support ticket and its conversation history in 2-3 concise sentences. Focus on the customer's issue, any actions taken, and the current state. Return only the summary.",
+    prompt: `Subject: ${ticket.subject}\nCustomer: ${ticket.senderName} (${ticket.senderEmail})\nStatus: ${ticket.status}\n\nConversation:\n${conversation}`,
+  });
+
+  const updated = await db.ticket.update({
+    where: { id: req.params.id },
+    data: { aiSummary: text },
+    include: {
+      agent: { select: { id: true, name: true, email: true } },
+      messages: { orderBy: { createdAt: "asc" } },
+    },
+  });
+
+  res.json(updated);
+});
+
 export default router;

@@ -1,7 +1,10 @@
-import { Mail, Clock, Bot } from "lucide-react";
+import { useState } from "react";
+import { Mail, Clock, Bot, Sparkles } from "lucide-react";
+import axios from "axios";
 import { TicketStatus, TicketCategory } from "core";
 import type { Agent } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -24,6 +27,7 @@ function formatDate(date: string) {
 }
 
 interface TicketSidebarProps {
+  ticketId: string;
   status: TicketStatus;
   category: TicketCategory | null;
   assignedTo: string | null;
@@ -34,12 +38,14 @@ interface TicketSidebarProps {
   onStatusChange: (status: TicketStatus) => void;
   onCategoryChange: (category: TicketCategory | null) => void;
   onAssignChange: (assignedTo: string | null) => void;
+  onSummaryGenerated: () => void;
   statusPending?: boolean;
   categoryPending?: boolean;
   assignPending?: boolean;
 }
 
 export function TicketSidebar({
+  ticketId,
   status,
   category,
   assignedTo,
@@ -50,10 +56,22 @@ export function TicketSidebar({
   onStatusChange,
   onCategoryChange,
   onAssignChange,
+  onSummaryGenerated,
   statusPending,
   categoryPending,
   assignPending,
 }: TicketSidebarProps) {
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
+  async function handleSummarize() {
+    setIsSummarizing(true);
+    try {
+      await axios.post(`/api/tickets/${ticketId}/summarize`);
+      onSummaryGenerated();
+    } finally {
+      setIsSummarizing(false);
+    }
+  }
   return (
     <div className="space-y-4">
       <Card>
@@ -154,19 +172,29 @@ export function TicketSidebar({
         </CardContent>
       </Card>
 
-      {aiSummary && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Bot className="h-3.5 w-3.5 text-violet-500" />
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 AI Summary
               </label>
             </div>
-            <p className="text-sm">{aiSummary}</p>
-          </CardContent>
-        </Card>
-      )}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isSummarizing}
+              onClick={handleSummarize}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              {isSummarizing ? "Summarizing..." : aiSummary ? "Regenerate" : "Summarize"}
+            </Button>
+          </div>
+          {aiSummary && <p className="text-sm">{aiSummary}</p>}
+        </CardContent>
+      </Card>
     </div>
   );
 }

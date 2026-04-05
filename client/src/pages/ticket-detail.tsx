@@ -153,6 +153,7 @@ export default function TicketDetailPage() {
 
         {/* Sidebar */}
         <TicketSidebar
+          ticketId={id!}
           status={ticket.status}
           category={ticket.category}
           assignedTo={ticket.assignedTo}
@@ -163,6 +164,7 @@ export default function TicketDetailPage() {
           onStatusChange={(s) => statusMutation.mutate(s)}
           onCategoryChange={(c) => categoryMutation.mutate(c)}
           onAssignChange={(a) => assignMutation.mutate(a)}
+          onSummaryGenerated={() => queryClient.invalidateQueries({ queryKey: ["tickets", id] })}
           statusPending={statusMutation.isPending}
           categoryPending={categoryMutation.isPending}
           assignPending={assignMutation.isPending}
